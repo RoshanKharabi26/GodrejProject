@@ -1,5 +1,12 @@
+# pip install xlrd
+# pip install tkinter
+# pip install pandas
+# pip install openpyxl
+
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
+import warnings
 import pandas as pd
 
 class ExcelDataTransferApp:
@@ -64,7 +71,11 @@ class ExcelDataTransferApp:
         
     def validate_and_generate(self):
         if self.validate_inputs():
-            self.generate_files()
+            try:
+                self.generate_files()
+                messagebox.showinfo("Success", "Files generated successfully.")
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
     def validate_inputs(self):
         file_path = self.file_path_var.get()
@@ -83,9 +94,24 @@ class ExcelDataTransferApp:
         
         return True
 
+    def transfer_data(self,column_names,df,unique_values):
+        try:
+            for values in unique_values:
+                # Filter the DataFrame for the current value
+                values_df = df[df[column_names] == values]
+
+                # Create a new Excel file for the current country
+                output_file_path = f'{self.folder_path_var.get()}/{values}_data.xlsx'
+                with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+                    values_df.to_excel(writer, sheet_name='Sheet1', index=False)
+
+            messagebox.showinfo("Success", "Files generated successfully!")
+        except Exception as e:
+            raise e
+
     def generate_files(self):
 
-        #Select the column name
+        # Select the column name
         column_names = self.column_names_var.get()
 
         # Read the Excel file
@@ -94,28 +120,14 @@ class ExcelDataTransferApp:
 
         # Extract unique values from the column name
         unique_values = df[column_names].unique()
-        
-        # print(unique_values)
+        print(unique_values)
 
-
-        # Create Excel files for each unique value
-        for values in unique_values:
-            # Filter the DataFrame for the current value
-            values_df = df[df[column_names] == values]
-
-            # Create a new Excel file for the current country
-            output_file_path = f'{self.folder_path_var.get()}/{values}_data.xlsx'
-            with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
-                values_df.to_excel(writer, sheet_name='Sheet1', index=False)
-
-        # print("Excel files created successfully.")
-        messagebox.showinfo("Success", "Files generated successfully!")
-
-    # def transfer_data(self):
-    #     # Add your logic for transferring data here
-    #     messagebox.showinfo("Success", "Data transferred successfully!")
-
+        self.transfer_data(column_names,df,unique_values)
+    
 if __name__ == "__main__":
+    # Ignore UserWarning related to openpyxl
+    warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+
     root = tk.Tk()
     app = ExcelDataTransferApp(root)
     root.mainloop()
